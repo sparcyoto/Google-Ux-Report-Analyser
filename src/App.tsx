@@ -1,35 +1,161 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from "react";
+import {
+  Container,
+  Typography,
+  TextField,
+  Button,
+  Paper,
+  Box,
+  CircularProgress,
+  Divider,
+  Alert,
+} from "@mui/material";
+import CruxDataTable from "./components/CruxDataTable/index";
+import UrlInputArea from "./components/UrlInputArea/index";
+import FilterControls from "./components/FilterControls/index";
+import SummaryStats from "./components/SummaryStats/index";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [urls, setUrls] = useState([]);
+  const [inputText, setInputText] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    metric: "",
+    threshold: "",
+    operator: "greaterThan",
+  });
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
+
+  // Handle adding a URL
+  const handleAddUrl = () => {
+    if (inputText && !urls.includes(inputText)) {
+      setUrls([...urls, inputText]);
+      setInputText("");
+    }
+  };
+
+  // Handle removing a URL
+  const handleRemoveUrl = (urlToRemove) => {
+    setUrls(urls.filter((url) => url !== urlToRemove));
+  };
+
+  // Handle fetching data
+  const handleFetchData = async () => {
+    if (urls.length === 0) {
+      setError("Please add at least one URL");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/crux", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ urls }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch data");
+      }
+
+      setResults(data.results);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Container maxWidth="lg" className="app-container">
+      <Typography variant="h3" component="h1" gutterBottom align="center">
+        Chrome UX Report Explorer
+      </Typography>
+
+      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+        <Typography variant="h5" gutterBottom>
+          Enter URLs to Analyze
+        </Typography>
+
+        <UrlInputArea
+          urls={urls}
+          inputText={inputText}
+          setInputText={setInputText}
+          handleAddUrl={handleAddUrl}
+          handleRemoveUrl={handleRemoveUrl}
+        />
+
+        <Box mt={2} display="flex" justifyContent="center">
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleFetchData}
+            disabled={loading || urls.length === 0}
+            startIcon={
+              loading && <CircularProgress size={20} color="inherit" />
+            }
+          >
+            {loading ? "Fetching Data..." : "Fetch CrUX Data"}
+          </Button>
+        </Box>
+      </Paper>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {results.length > 0 && (
+        <>
+          <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+            <Typography variant="h5" gutterBottom>
+              Filter & Sort
+            </Typography>
+            <FilterControls
+              filters={filters}
+              setFilters={setFilters}
+              sortConfig={sortConfig}
+              setSortConfig={setSortConfig}
+            />
+          </Paper>
+
+          {urls.length > 1 && (
+            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+              <Typography variant="h5" gutterBottom>
+                Summary Statistics
+              </Typography>
+              <SummaryStats results={results} />
+            </Paper>
+          )}
+
+          <Paper elevation={3} sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              CrUX Data Results
+            </Typography>
+            <CruxDataTable
+              results={results}
+              filters={filters}
+              sortConfig={sortConfig}
+              setSortConfig={setSortConfig}
+            />
+          </Paper>
+        </>
+      )}
+    </Container>
+  );
 }
 
-export default App
+export default App;
