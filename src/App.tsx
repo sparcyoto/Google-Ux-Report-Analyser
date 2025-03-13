@@ -92,7 +92,7 @@ function App() {
   };
 
   return (
-    <Container maxWidth="lg" className="app-container">
+    <div className="appShell">
       <Typography variant="h3" component="h1" gutterBottom align="center">
         Chrome UX Report Explorer
       </Typography>
@@ -167,7 +167,7 @@ function App() {
           </Paper>
         </>
       )}
-    </Container>
+    </div>
   );
 }
 

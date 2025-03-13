@@ -1,8 +1,19 @@
 #root {
-  max-width: 1280px;
+  /* max-width: 1280px; */
   margin: 0 auto;
-  padding: 2rem;
+  /* padding: 2rem; */
+
+  /* width: 100vw; */
+
+  /* display: flex; */
+  /* align-items: center; */
+  /* justify-content: center; */
   text-align: center;
+}
+
+.appShell {
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
 .logo {
