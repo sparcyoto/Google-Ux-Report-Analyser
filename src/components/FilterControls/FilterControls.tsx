@@ -1,17 +1,28 @@
-import React from "react";
 import {
-  Box,
   FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Grid,
   FormControlLabel,
+  Grid,
+  InputLabel,
+  MenuItem,
   Radio,
   RadioGroup,
+  Select,
+  TextField,
 } from "@mui/material";
-
+import { metrics } from "./filterControls.constants";
+/**
+ * FilterControls Component
+ *
+ * This component provides UI controls for filtering and sorting web performance metrics.
+ * It allows users to select a specific metric, set a threshold value, and choose a comparison operator.
+ *
+ * @param {Object} props - Component props
+ * @param {Object} props.filters - Current filter state containing metric, threshold, and operator
+ * @param {Function} props.setFilters - Function to update the filters state
+ * @param {Object} props.sortConfig - Current sort configuration
+ * @param {Function} props.setSortConfig - Function to update the sort configuration
+ * @returns {JSX.Element} Filter controls UI
+ */
 function FilterControls({
   filters,
   setFilters,
@@ -23,34 +34,9 @@ function FilterControls({
   sortConfig: any;
   setSortConfig: any;
 }) {
-  const metrics = [
-    { value: "first_contentful_paint", label: "First Contentful Paint" },
-    { value: "largest_contentful_paint", label: "Largest Contentful Paint" },
-    // { value: "first_input_delay", label: "First Input Delay" },
-    { value: "cumulative_layout_shift", label: "Cumulative Layout Shift" },
-    { value: "interaction_to_next_paint", label: "Interaction to Next Paint" },
-    { value: "experimental_time_to_first_byte", label: "Time to First Byte" },
-    {
-      value: "largest_contentful_paint_image_time_to_first_byte",
-      label: "LCP Image Time to First Byte",
-    },
-    {
-      value: "largest_contentful_paint_image_element_render_delay",
-      label: "LCP Image Element Render Delay",
-    },
-    {
-      value: "largest_contentful_paint_image_resource_load_delay",
-      label: "LCP Image Resource Load Delay",
-    },
-    {
-      value: "largest_contentful_paint_image_resource_load_duration",
-      label: "LCP Image Resource Load Duration",
-    },
-    { value: "round_trip_time", label: "Round Trip Time" },
-  ];
-
   return (
     <Grid container spacing={3}>
+      {/* Metric selection dropdown */}
       <Grid item xs={12} md={4}>
         <FormControl fullWidth>
           <InputLabel>Filter by Metric</InputLabel>
@@ -71,6 +57,7 @@ function FilterControls({
         </FormControl>
       </Grid>
 
+      {/* Threshold value input field - disabled if no metric is selected */}
       <Grid item xs={12} md={4}>
         <TextField
           fullWidth
@@ -85,6 +72,7 @@ function FilterControls({
         />
       </Grid>
 
+      {/* Comparison operator selection - disabled if no metric is selected */}
       <Grid item xs={12} md={4}>
         <FormControl component="fieldset" disabled={!filters.metric}>
           <RadioGroup

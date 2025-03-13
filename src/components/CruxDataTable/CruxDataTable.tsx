@@ -1,19 +1,22 @@
-import React, { useMemo } from "react";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import {
+  Alert,
+  Box,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Typography,
-  Box,
-  Alert,
 } from "@mui/material";
-import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
-
+import { useMemo } from "react";
+import { formatMetricName, formatMetricValue } from "./cruxDataTable.helpers";
+/**
+ * Interface representing raw CrUX API result data
+ */
 interface CruxResult {
   url: string;
   error?: string;
@@ -33,6 +36,9 @@ interface CruxResult {
   };
 }
 
+/**
+ * Interface representing processed and normalized CrUX data for display
+ */
 interface ProcessedDataItem {
   url: string;
   isError: boolean;
@@ -44,17 +50,17 @@ interface ProcessedDataItem {
   poor: number;
 }
 
+/**
+ * Interface for table sorting configuration
+ */
 interface SortConfig {
   key: keyof ProcessedDataItem | "";
   direction: "asc" | "desc";
 }
 
-interface Filters {
-  metric: string;
-  threshold: string;
-  operator: "greaterThan" | "lessThan";
-}
-
+/**
+ * Props for the CruxDataTable component
+ */
 interface CruxDataTableProps {
   results: CruxResult[];
   filters: Filters;
@@ -62,12 +68,24 @@ interface CruxDataTableProps {
   setSortConfig: (config: SortConfig) => void;
 }
 
-function CruxDataTable({
-  results,
-  filters,
-  sortConfig,
-  setSortConfig,
-}: CruxDataTableProps) {
+/**
+ * Interface for filtering CrUX data
+ */
+interface Filters {
+  metric: string;
+  threshold: string;
+  operator: "greaterThan" | "lessThan";
+}
+
+/**
+ * Component that displays CrUX data in a sortable and filterable table
+ *
+ * @param results - Array of CrUX API results
+ * @param filters - Current filter settings
+ * @param sortConfig - Current sort configuration
+ * @param setSortConfig - Function to update sort configuration
+ */
+function CruxDataTable({ results, filters, sortConfig, setSortConfig }: any) {
   // Process and normalize CrUX data
   const processedData = useMemo(() => {
     return results.flatMap((result: any) => {
@@ -126,7 +144,7 @@ function CruxDataTable({
       return processedData;
     }
 
-    return processedData.filter((item) => {
+    return processedData.filter((item: any) => {
       if (item.isError || item.metric !== filters.metric) {
         return false;
       }
@@ -292,39 +310,6 @@ function CruxDataTable({
       </Table>
     </TableContainer>
   );
-}
-
-// Helper function to format metric names
-function formatMetricName(metricKey: string): string {
-  const metricNames: { [key: string]: string } = {
-    first_contentful_paint: "First Contentful Paint",
-    largest_contentful_paint: "Largest Contentful Paint",
-    first_input_delay: "First Input Delay",
-    cumulative_layout_shift: "Cumulative Layout Shift",
-    interaction_to_next_paint: "Interaction to Next Paint",
-  };
-
-  return metricNames[metricKey] || metricKey;
-}
-
-// Helper function to format metric values
-function formatMetricValue(metric: string, value: number | string): string {
-  if (value === "N/A") return value;
-
-  const numValue = typeof value === "string" ? parseFloat(value) : value;
-
-  switch (metric) {
-    case "cumulative_layout_shift":
-      return String(numValue);
-    case "first_contentful_paint":
-    case "largest_contentful_paint":
-    case "interaction_to_next_paint":
-      return `${numValue}ms`;
-    case "first_input_delay":
-      return `${numValue}ms`;
-    default:
-      return String(value);
-  }
 }
 
 export default CruxDataTable;

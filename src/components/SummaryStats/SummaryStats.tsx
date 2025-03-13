@@ -1,15 +1,20 @@
-import React, { useMemo } from "react";
-import { Grid, Card, CardContent, Typography, Divider } from "@mui/material";
+import { Card, CardContent, Divider, Grid, Typography } from "@mui/material";
+import { useMemo } from "react";
 import {
-  ResponsiveContainer,
-  BarChart,
   Bar,
+  BarChart,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  Legend,
 } from "recharts";
+import { formatMetricName, formatMetricValue } from "./summaryStats.helpers";
 
+/**
+ * Interface representing the structure of a CrUX API result
+ * Contains performance metrics data for a specific URL
+ */
 interface CruxResult {
   url: string;
   error?: string;
@@ -43,6 +48,9 @@ interface CruxResult {
   };
 }
 
+/**
+ * Interface for storing summarized metric data
+ */
 interface MetricSummary {
   name: string;
   p75Values: number[];
@@ -51,6 +59,9 @@ interface MetricSummary {
   poorValues: number[];
 }
 
+/**
+ * Interface for chart data items
+ */
 interface ChartDataItem {
   name: string;
   metricKey: string;
@@ -60,12 +71,18 @@ interface ChartDataItem {
   avgPoor: number;
 }
 
+/**
+ * Props for the SummaryStats component
+ */
 interface SummaryStatsProps {
   results: CruxResult[];
 }
 
+/**
+ * Component that displays summary statistics for performance metrics
+ * @param results - Array of CrUX API results
+ */
 function SummaryStats({ results }: SummaryStatsProps) {
-  debugger;
   // Calculate summary statistics from the results
   const summaryData = useMemo(() => {
     const validResults = results;
@@ -226,41 +243,6 @@ function SummaryStats({ results }: SummaryStatsProps) {
       </Grid>
     </Grid>
   );
-}
-
-// Helper function to format metric names
-function formatMetricName(metricKey: string): string {
-  const metricNames: Record<string, string> = {
-    first_contentful_paint: "First Contentful Paint",
-    largest_contentful_paint: "Largest Contentful Paint",
-    first_input_delay: "First Input Delay",
-    cumulative_layout_shift: "Cumulative Layout Shift",
-    interaction_to_next_paint: "Interaction to Next Paint",
-    experimental_time_to_first_byte: "Time to First Byte",
-    round_trip_time: "Round Trip Time",
-  };
-
-  return metricNames[metricKey] || metricKey;
-}
-
-// Helper function to format metric values
-function formatMetricValue(metric: string | undefined, value: number): string {
-  if (!value) return "N/A";
-
-  switch (metric) {
-    case "cumulative_layout_shift":
-      return value.toFixed(3);
-    case "first_contentful_paint":
-    case "largest_contentful_paint":
-    case "interaction_to_next_paint":
-    case "experimental_time_to_first_byte":
-      return `${(value / 1000).toFixed(2)}s`;
-    case "first_input_delay":
-    case "round_trip_time":
-      return `${value.toFixed(0)}ms`;
-    default:
-      return value.toString();
-  }
 }
 
 export default SummaryStats;

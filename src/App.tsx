@@ -1,27 +1,34 @@
-import React, { useState } from "react";
 import {
-  Container,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Box,
-  CircularProgress,
-  Divider,
   Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Paper,
+  Typography,
 } from "@mui/material";
+import { useState } from "react";
+import "./App.css";
 import CruxDataTable from "./components/CruxDataTable/index";
-import UrlInputArea from "./components/UrlInputArea/index";
 import FilterControls from "./components/FilterControls/index";
 import SummaryStats from "./components/SummaryStats/index";
-import "./App.css";
+import UrlInputArea from "./components/UrlInputArea/index";
 
+/**
+ * Main App component for Chrome UX Report Explorer
+ * This application allows users to fetch and analyze Chrome User Experience (CrUX) data
+ * for multiple URLs, with filtering, sorting, and comparison capabilities.
+ */
 function App() {
-  const [urls, setUrls] = useState([]);
+  // State for managing URLs to be analyzed
+  const [urls, setUrls] = useState<string[]>([]);
   const [inputText, setInputText] = useState("");
-  const [results, setResults] = useState([]);
+
+  // State for API results, loading status, and error handling
+  const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // State for filtering and sorting data
   const [filters, setFilters] = useState({
     metric: "",
     threshold: "",
@@ -32,7 +39,9 @@ function App() {
     direction: "asc",
   });
 
-  // Handle adding a URL
+  /**
+   * Adds a URL to the list if it's valid and not already included
+   */
   const handleAddUrl = () => {
     if (inputText && !urls.includes(inputText)) {
       setUrls([...urls, inputText]);
@@ -40,12 +49,18 @@ function App() {
     }
   };
 
-  // Handle removing a URL
-  const handleRemoveUrl = (urlToRemove) => {
+  /**
+   * Removes a URL from the list
+   * @param urlToRemove - The URL to be removed
+   */
+  const handleRemoveUrl = (urlToRemove: string) => {
     setUrls(urls.filter((url) => url !== urlToRemove));
   };
 
-  // Handle fetching data
+  /**
+   * Fetches CrUX data for all URLs in parallel
+   * Uses the Chrome UX Report API to get performance metrics
+   */
   const handleFetchData = async () => {
     if (urls.length === 0) {
       setError("Please add at least one URL");
@@ -91,12 +106,14 @@ function App() {
     }
   };
 
+  // Render the application UI
   return (
     <div className="appShell">
       <Typography variant="h3" component="h1" gutterBottom align="center">
         Chrome UX Report Explorer
       </Typography>
 
+      {/* URL Input Section */}
       <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
         <Typography variant="h5" gutterBottom>
           Enter URLs to Analyze
@@ -125,14 +142,17 @@ function App() {
         </Box>
       </Paper>
 
+      {/* Error Display */}
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
 
+      {/* Results Section - Only displayed when results are available */}
       {results.length > 0 && (
         <>
+          {/* Filtering and Sorting Controls */}
           <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
             <Typography variant="h5" gutterBottom>
               Filter & Sort
@@ -145,6 +165,7 @@ function App() {
             />
           </Paper>
 
+          {/* Summary Statistics - Only displayed for multiple URLs */}
           {urls.length > 1 && (
             <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
               <Typography variant="h5" gutterBottom>
@@ -154,6 +175,7 @@ function App() {
             </Paper>
           )}
 
+          {/* Data Table Display */}
           <Paper elevation={3} sx={{ p: 3 }}>
             <Typography variant="h5" gutterBottom>
               CrUX Data Results
