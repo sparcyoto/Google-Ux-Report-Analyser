@@ -15,17 +15,31 @@ interface CruxResult {
   error?: string;
   data?: {
     record: {
+      key?: {
+        url: string;
+      };
       metrics: {
         [key: string]: {
           percentiles?: {
             p75: number;
           };
           histogram?: Array<{
+            start?: string | number;
+            end?: string | number;
             density: number;
           }>;
+          fractions?: Record<string, number>;
         };
       };
+      collectionPeriod?: {
+        firstDate: { year: number; month: number; day: number };
+        lastDate: { year: number; month: number; day: number };
+      };
     };
+  };
+  urlNormalizationDetails?: {
+    originalUrl: string;
+    normalizedUrl: string;
   };
 }
 
@@ -51,19 +65,30 @@ interface SummaryStatsProps {
 }
 
 function SummaryStats({ results }: SummaryStatsProps) {
+  debugger;
   // Calculate summary statistics from the results
   const summaryData = useMemo(() => {
-    const validResults = results.filter(
-      (result) => !result.error && result.data
-    );
+    const validResults = results;
     if (validResults.length === 0) return null;
 
     const metricSummaries: Record<string, MetricSummary> = {};
 
-    validResults.forEach((result) => {
-      const metrics = result.data!.record.metrics || {};
+    validResults.forEach((result: any) => {
+      const metrics = result?.record.metrics || {};
 
       Object.entries(metrics).forEach(([metricName, metricData]) => {
+        // Skip non-performance metrics
+        if (
+          metricName === "form_factors" ||
+          metricName === "navigation_types" ||
+          metricName === "largest_contentful_paint_resource_type" ||
+          metricName.includes("_resource_") ||
+          metricName.includes("_element_") ||
+          metricName.includes("_delay")
+        ) {
+          return;
+        }
+
         if (!metricSummaries[metricName]) {
           metricSummaries[metricName] = {
             name: formatMetricName(metricName),
@@ -82,9 +107,11 @@ function SummaryStats({ results }: SummaryStatsProps) {
           summary.p75Values.push(percentiles.p75);
         }
 
-        summary.goodValues.push(histogram[0]?.density || 0);
-        summary.needsImprovementValues.push(histogram[1]?.density || 0);
-        summary.poorValues.push(histogram[2]?.density || 0);
+        if (histogram.length > 0) {
+          summary.goodValues.push(histogram[0]?.density || 0);
+          summary.needsImprovementValues.push(histogram[1]?.density || 0);
+          summary.poorValues.push(histogram[2]?.density || 0);
+        }
       });
     });
 
@@ -209,6 +236,8 @@ function formatMetricName(metricKey: string): string {
     first_input_delay: "First Input Delay",
     cumulative_layout_shift: "Cumulative Layout Shift",
     interaction_to_next_paint: "Interaction to Next Paint",
+    experimental_time_to_first_byte: "Time to First Byte",
+    round_trip_time: "Round Trip Time",
   };
 
   return metricNames[metricKey] || metricKey;
@@ -224,8 +253,10 @@ function formatMetricValue(metric: string | undefined, value: number): string {
     case "first_contentful_paint":
     case "largest_contentful_paint":
     case "interaction_to_next_paint":
+    case "experimental_time_to_first_byte":
       return `${(value / 1000).toFixed(2)}s`;
     case "first_input_delay":
+    case "round_trip_time":
       return `${value.toFixed(0)}ms`;
     default:
       return value.toString();
