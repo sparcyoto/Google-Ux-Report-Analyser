@@ -71,10 +71,13 @@ function CruxDataTable({
   // Process and normalize CrUX data
   const processedData = useMemo(() => {
     return results.flatMap((result: any) => {
-      if (result.error || !result.data) {
+      if (result.error || !result.record || !result.record.metrics) {
         return [
           {
-            url: result.url,
+            url:
+              result.urlNormalizationDetails?.normalizedUrl ||
+              result.url ||
+              "Unknown URL",
             isError: true,
             error: result.error || "No data available",
             good: 0,
@@ -85,23 +88,35 @@ function CruxDataTable({
       }
 
       // Extract metrics from CrUX data
-      const metrics = result.data.record.metrics || {};
+      const metrics = result.record.metrics || {};
+      const url =
+        result.urlNormalizationDetails?.normalizedUrl ||
+        result.record?.key?.url ||
+        result.url ||
+        "Unknown URL";
 
-      return Object.entries(metrics).map(([metricName, metricData]: any) => {
-        // Extract histogram data
-        const histogram = metricData.histogram || [];
-        const percentiles = metricData.percentiles || {};
+      return Object.entries(metrics)
+        .map(([metricName, metricData]: any) => {
+          // Skip non-metric entries like form_factors, navigation_types, etc.
+          if (!metricData.histogram && !metricData.percentiles) {
+            return null;
+          }
 
-        return {
-          url: result.url,
-          metric: metricName,
-          p75: percentiles.p75 || "N/A",
-          good: histogram[0]?.density || 0,
-          needsImprovement: histogram[1]?.density || 0,
-          poor: histogram[2]?.density || 0,
-          isError: false,
-        };
-      });
+          // Extract histogram data
+          const histogram = metricData.histogram || [];
+          const percentiles = metricData.percentiles || {};
+
+          return {
+            url: url,
+            metric: metricName,
+            p75: percentiles.p75 || "N/A",
+            good: histogram[0]?.density || 0,
+            needsImprovement: histogram[1]?.density || 0,
+            poor: histogram[2]?.density || 0,
+            isError: false,
+          };
+        })
+        .filter(Boolean); // Remove null entries
     });
   }, [results]);
 
@@ -300,13 +315,13 @@ function formatMetricValue(metric: string, value: number | string): string {
 
   switch (metric) {
     case "cumulative_layout_shift":
-      return numValue.toFixed(3);
+      return String(numValue);
     case "first_contentful_paint":
     case "largest_contentful_paint":
     case "interaction_to_next_paint":
-      return `${(numValue / 1000).toFixed(2)}s`;
+      return `${numValue}ms`;
     case "first_input_delay":
-      return `${numValue.toFixed(0)}ms`;
+      return `${numValue}ms`;
     default:
       return String(value);
   }

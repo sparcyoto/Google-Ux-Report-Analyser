@@ -56,23 +56,36 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:5000/api/crux", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ urls }),
-      });
+      // Create an array of promises for each URL
+      const fetchPromises = urls.map((url) =>
+        fetch(
+          "https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=AIzaSyDqIGrdBqOc5qgkuwpvw4GhtOxFigboKiM",
+          {
+            method: "POST",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              url: url,
+            }),
+          }
+        ).then((response) => {
+          if (!response.ok) {
+            return response.json().then((data) => {
+              throw new Error(data.error || `Failed to fetch data for ${url}`);
+            });
+          }
+          return response.json();
+        })
+      );
 
-      const data = await response.json();
+      // Execute all fetch requests in parallel
+      const resultsData = await Promise.all(fetchPromises);
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch data");
-      }
-
-      setResults(data.results);
+      setResults(resultsData);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
