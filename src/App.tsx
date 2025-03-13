@@ -57,6 +57,8 @@ function App() {
     setUrls(urls.filter((url) => url !== urlToRemove));
   };
 
+  // console.log("CRUX_API_KEY", process.env.CRUX_API_KEY);
+
   /**
    * Fetches CrUX data for all URLs in parallel
    * Uses the Chrome UX Report API to get performance metrics
@@ -74,7 +76,9 @@ function App() {
       // Create an array of promises for each URL
       const fetchPromises = urls.map((url) =>
         fetch(
-          "https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=AIzaSyDqIGrdBqOc5qgkuwpvw4GhtOxFigboKiM",
+          `https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=${
+            import.meta.env.VITE_CRUX_API_KEY
+          }`,
           {
             method: "POST",
             headers: {
