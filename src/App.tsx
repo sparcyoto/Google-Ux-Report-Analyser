@@ -12,6 +12,7 @@ import CruxDataTable from "./components/CruxDataTable/index";
 import FilterControls from "./components/FilterControls/index";
 import SummaryStats from "./components/SummaryStats/index";
 import UrlInputArea from "./components/UrlInputArea/index";
+import { fetchCruxData } from "./helpers/fetchCruxData";
 
 /**
  * Main App component for Chrome UX Report Explorer
@@ -61,47 +62,14 @@ function App() {
 
   /**
    * Fetches CrUX data for all URLs in parallel
-   * Uses the Chrome UX Report API to get performance metrics
+   * Uses the external fetchCruxData function to get performance metrics
    */
   const handleFetchData = async () => {
-    if (urls.length === 0) {
-      setError("Please add at least one URL");
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      // Create an array of promises for each URL
-      const fetchPromises = urls.map((url) =>
-        fetch(
-          `https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=${
-            import.meta.env.VITE_CRUX_API_KEY
-          }`,
-          {
-            method: "POST",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              url: url,
-            }),
-          }
-        ).then((response) => {
-          if (!response.ok) {
-            return response.json().then((data) => {
-              throw new Error(data.error || `Failed to fetch data for ${url}`);
-            });
-          }
-          return response.json();
-        })
-      );
-
-      // Execute all fetch requests in parallel
-      const resultsData = await Promise.all(fetchPromises);
-
+      const resultsData = await fetchCruxData(urls);
       setResults(resultsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -110,89 +78,122 @@ function App() {
     }
   };
 
+  /**
+   * Renders the header section of the application
+   */
+  const renderHeader = () => (
+    <Typography variant="h3" component="h1" gutterBottom align="center">
+      Chrome UX Report Explorer
+    </Typography>
+  );
+
+  /**
+   * Renders the URL input section
+   */
+  const renderUrlInputSection = () => (
+    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+      <Typography variant="h5" gutterBottom>
+        Enter URLs to Analyze
+      </Typography>
+
+      <UrlInputArea
+        urls={urls}
+        inputText={inputText}
+        setInputText={setInputText}
+        handleAddUrl={handleAddUrl}
+        handleRemoveUrl={handleRemoveUrl}
+      />
+
+      <Box mt={2} display="flex" justifyContent="center">
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleFetchData}
+          disabled={loading || urls.length === 0}
+          startIcon={loading && <CircularProgress size={20} color="inherit" />}
+        >
+          {loading ? "Fetching Data..." : "Fetch CrUX Data"}
+        </Button>
+      </Box>
+    </Paper>
+  );
+
+  /**
+   * Renders error messages if any
+   */
+  const renderErrorMessage = () =>
+    error && (
+      <Alert severity="error" sx={{ mb: 3 }}>
+        {error}
+      </Alert>
+    );
+
+  /**
+   * Renders the filter and sort controls
+   */
+  const renderFilterControls = () => (
+    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+      <Typography variant="h5" gutterBottom>
+        Filter & Sort
+      </Typography>
+      <FilterControls
+        filters={filters}
+        setFilters={setFilters}
+        sortConfig={sortConfig}
+        setSortConfig={setSortConfig}
+      />
+    </Paper>
+  );
+
+  /**
+   * Renders summary statistics for multiple URLs
+   */
+  const renderSummaryStats = () =>
+    urls.length > 1 && (
+      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+        <Typography variant="h5" gutterBottom>
+          Summary Statistics
+        </Typography>
+        <SummaryStats results={results} />
+      </Paper>
+    );
+
+  /**
+   * Renders the data table with results
+   */
+  const renderDataTable = () => (
+    <Paper elevation={3} sx={{ p: 3 }}>
+      <Typography variant="h5" gutterBottom>
+        CrUX Data Results
+      </Typography>
+      <CruxDataTable
+        results={results}
+        filters={filters}
+        sortConfig={sortConfig}
+        setSortConfig={setSortConfig}
+      />
+    </Paper>
+  );
+
+  /**
+   * Renders the results section when data is available
+   */
+  const renderResults = () =>
+    results.length > 0 && (
+      <>
+        {renderFilterControls()}
+        {renderSummaryStats()}
+        {renderDataTable()}
+      </>
+    );
+
   // Render the application UI
   return (
     <div className="appShell">
-      <Typography variant="h3" component="h1" gutterBottom align="center">
-        Chrome UX Report Explorer
-      </Typography>
-
-      {/* URL Input Section */}
-      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          Enter URLs to Analyze
-        </Typography>
-
-        <UrlInputArea
-          urls={urls}
-          inputText={inputText}
-          setInputText={setInputText}
-          handleAddUrl={handleAddUrl}
-          handleRemoveUrl={handleRemoveUrl}
-        />
-
-        <Box mt={2} display="flex" justifyContent="center">
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleFetchData}
-            disabled={loading || urls.length === 0}
-            startIcon={
-              loading && <CircularProgress size={20} color="inherit" />
-            }
-          >
-            {loading ? "Fetching Data..." : "Fetch CrUX Data"}
-          </Button>
-        </Box>
-      </Paper>
-
-      {/* Error Display */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Results Section - Only displayed when results are available */}
-      {results.length > 0 && (
-        <>
-          {/* Filtering and Sorting Controls */}
-          <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-            <Typography variant="h5" gutterBottom>
-              Filter & Sort
-            </Typography>
-            <FilterControls
-              filters={filters}
-              setFilters={setFilters}
-              sortConfig={sortConfig}
-              setSortConfig={setSortConfig}
-            />
-          </Paper>
-
-          {/* Summary Statistics - Only displayed for multiple URLs */}
-          {urls.length > 1 && (
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-              <Typography variant="h5" gutterBottom>
-                Summary Statistics
-              </Typography>
-              <SummaryStats results={results} />
-            </Paper>
-          )}
-
-          {/* Data Table Display */}
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h5" gutterBottom>
-              CrUX Data Results
-            </Typography>
-            <CruxDataTable
-              results={results}
-              filters={filters}
-              sortConfig={sortConfig}
-              setSortConfig={setSortConfig}
-            />
-          </Paper>
-        </>
-      )}
+      {renderHeader()}
+      {renderUrlInputSection()}
+      {renderErrorMessage()}
+      {renderResults()}
     </div>
   );
 }
